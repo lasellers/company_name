@@ -1,34 +1,7 @@
 <?php
 // Note: Mulling ways to condense the sub functions. All of the string and array really
 // need to be pre-processed and cached so we can ditch a lot of the preamble.
-
-/**
- * Takes a company string and explodes it to a first,middle,last array
- * @param string $record
- * @return array
- */
-function getFirstMiddleLast(string $record): array
-{
-    $words = explode(" ", trim($record));
-    if (count($words) === 2) {
-        $middle = "";
-        [$first, $last] = $words;
-    } else {
-        [$first, $middle, $last] = $words;
-    }
-    return [$first, $middle, $last];
-}
-
-/**
- * Reverse the first and middle names
- * @param string $record
- * @return string
- */
-function reverseFirstMiddleNames(string $record): string
-{
-    [$first, $middle, $last] = getFirstMiddleLast($record);
-    return trim(implode(" ", [$middle, $first, $last]));
-}
+// Need to work on factoring out redundancies.
 
 /**
  * @param array $aliases
@@ -60,9 +33,9 @@ function matchName(array $aliases, string $record): bool
     $aliases2s = [];
     foreach ($aliases as $alias) {
         $a = explode(" ", $alias);
-        if (count($a) >= 3) {
+        if (count($a) === 3) {
             $aliases3s[] = $a;
-        } else { // if (count($a) === 2) {
+        } else {
             $aliases2s[] = $a;
         }
     }
@@ -185,6 +158,34 @@ function middleNameMissingOnAlias(array $aliases2s, string $recordFirst, string 
     }
 
     return false;
+}
+
+/**
+ * Takes a company string and explodes it to a first,middle,last array
+ * @param string $record
+ * @return array
+ */
+function getFirstMiddleLast(string $record): array
+{
+    $words = explode(" ", trim($record));
+    if (count($words) === 2) {
+        $middle = "";
+        [$first, $last] = $words;
+    } else {
+        [$first, $middle, $last] = $words;
+    }
+    return [$first, $middle, $last];
+}
+
+/**
+ * Reverse the first and middle names
+ * @param string $record
+ * @return string
+ */
+function reverseFirstMiddleNames(string $record): string
+{
+    [$first, $middle, $last] = getFirstMiddleLast($record);
+    return trim(implode(" ", [$middle, $first, $last]));
 }
 
 //Testing Cases
