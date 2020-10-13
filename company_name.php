@@ -40,7 +40,7 @@ function matchName(array $aliases, string $record): bool
     // prep data
     $words = explode(" ", $record);
     // Anything other than 2 or 3 words, fails
-    if (!in_array(count($words), [2, 3]))
+    if (!in_array(count($words), [2, 3], true))
         return false;
 
     $reverseRecord = reverseFirstMiddleNames($record);
@@ -54,6 +54,7 @@ function matchName(array $aliases, string $record): bool
     $reverseWords = explode(" ", $reverseRecord);
     [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
 
+    // if not an exact match, try seeing if there are partial matches ...
     // do this once per call
     $aliases3s = [];
     $aliases2s = [];
@@ -65,8 +66,6 @@ function matchName(array $aliases, string $record): bool
             $aliases2s[] = $a;
         }
     }
-
-    // if not an exact match, try seeing if there are partial matches ...
 
     // C. Check if we have middle initials that might match to the full
     // but not with reversed first+middle
@@ -81,7 +80,6 @@ function matchName(array $aliases, string $record): bool
     // B. no middle name (on record)
     $aliasesFML = [];
     foreach ($aliases as $alias) {
-        $a = explode(" ", $alias);
         $aliasesFML[] = getFirstMiddleLast($alias);
     }
     if (middleNameMissingOnRecord($aliasesFML, $words)
