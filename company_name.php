@@ -16,16 +16,15 @@ function matchName(array $aliases, string $record): bool
     if (!in_array(count($words), [2, 3], true))
         return false;
 
-    $reverseRecord = reverseFirstMiddleNames($record);
+    // prep data
+    [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
 
     // if exact match, good enough
-    if (exactMatch($aliases, $record) || exactMatch($aliases, $reverseRecord))
+    if (exactMatch($aliases, $record)
+        || exactMatch($aliases, trim(implode(" ", [$recordMiddle, $recordFirst, $recordLast]))))
         return true;
 
     // Otherwise, we look for other kinds of matches
-    // prep data
-    $reverseWords = explode(" ", $reverseRecord);
-    [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
 
     // if not an exact match, try seeing if there are partial matches ...
     // do this once per call
@@ -55,8 +54,8 @@ function matchName(array $aliases, string $record): bool
     foreach ($aliases as $alias) {
         $aliasesFML[] = getFirstMiddleLast($alias);
     }
-    if (middleNameMissingOnRecord($aliasesFML, $words)
-        || middleNameMissingOnRecord($aliasesFML, $reverseWords))
+    if (middleNameMissingOnRecord($aliasesFML, $recordFirst, $recordMiddle, $recordLast)
+        || middleNameMissingOnRecord($aliasesFML, $recordMiddle, $recordFirst, $recordLast))
         return true;
 
     return false;
@@ -115,14 +114,13 @@ function matchingMiddleInitial(array $aliases3s, array $words): bool
  * @param array $words
  * @return bool
  */
-function middleNameMissingOnRecord(array $aliasesFML, array $words): bool
+function middleNameMissingOnRecord(array $aliasesFML, string $first, string $middle, string $last): bool
 {
     // if middle name is not missing, ignore
-    if (count($words) !== 2)
+    if ($middle !== "")
         return false;
 
     //
-    [$first, $last] = $words;
     foreach ($aliasesFML as $alias) {
         [$aliasFirst, $aliasMiddle, $aliasLast] = $alias;
         if (in_array($first, [$aliasFirst, $aliasMiddle], true) && $last === $aliasLast) {
