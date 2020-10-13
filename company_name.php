@@ -151,8 +151,8 @@ function middleNameMissingOnRecord(array $aliasesFML, array $words): bool
     //
     [$first, $last] = $words;
     foreach ($aliasesFML as $alias) {
-        [$firstAlias, $middleAlias, $lastAlias] = $alias;
-        if (in_array($first, [$firstAlias, $middleAlias], true) && $last === $lastAlias) {
+        [$aliasFirst, $aliasMiddle, $aliasLast] = $alias;
+        if (in_array($first, [$aliasFirst, $aliasMiddle], true) && $last === $aliasLast) {
             return true;
         }
     }
