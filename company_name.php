@@ -41,22 +41,35 @@ function matchName(array $aliases, string $record): bool
     if (exactMatch($aliases, $record) || exactMatch($aliases, reverseFirstMiddleNames($record)))
         return true;
 
+    //
     $words = explode(" ", $record);
     $reverseRecord = reverseFirstMiddleNames($record);
     $reverseWords = explode(" ", $reverseRecord);
 
+    // do this once per call
+    $aliases3s = [];
+    $aliases2s = [];
+    foreach ($aliases as $alias) {
+        $a = explode(" ", $alias);
+        if (count($a) >= 3) {
+            $aliases3s[] = $a;
+        } else if (count($a) === 2) {
+            $aliases2s[] = $a;
+        }
+    }
+
     // if not an exact match, try seeing if there are matches where the middle name is missing
     // A. no middle name (on alias)
-    $onAlias = middleNameMissingOnAlias($aliases, $record)
-        || middleNameMissingOnAlias($aliases, $reverseRecord);
+    $onAlias = middleNameMissingOnAlias($aliases2s, $record)
+        || middleNameMissingOnAlias($aliases2s, $reverseRecord);
 
     // B. no middle name (on record)
     $onRecord = middleNameMissingOnRecord($aliases, $words)
         || middleNameMissingOnRecord($aliases, $reverseWords);
 
     // also check if we have middle initials that might match to the full
-    $initial = matchingMiddleInitial($aliases, $words);
-    // || matchingMiddleInitial($aliases, $reverseWords);
+    // but not with reversed first+middle
+    $initial = matchingMiddleInitial($aliases3s, $words);
 
     return $onAlias || $onRecord || $initial;
 }
@@ -84,23 +97,16 @@ function exactMatch(array $aliases, string $record): bool
  * @param array $words
  * @return bool
  */
-function matchingMiddleInitial(array $aliases, array $words): bool
+function matchingMiddleInitial(array $aliases3s, array $words): bool
 {
     if (count($words) === 2)
         return false;
 
-    $arrs = [];
-    foreach ($aliases as $alias) {
-        $a = explode(" ", $alias);
-        if (count($a) >= 3) {
-            $arrs[] = $a;
-        }
-    }
-    if (count($arrs) === count($words))
+    if (count($aliases3s) === count($words))
         return false;
 
     $middleRecord = $words[1];
-    foreach ($arrs as $alias) {
+    foreach ($aliases3s as $alias) {
         $middleAlias = $alias[1];
         if (strlen($middleRecord) === 1 && $middleRecord === $middleAlias[0]) {
             return true;
@@ -142,22 +148,16 @@ function middleNameMissingOnRecord(array $aliases, array $words): bool
  * @param string $record
  * @return bool
  */
-function middleNameMissingOnAlias(array $aliases, string $record): bool
+function middleNameMissingOnAlias(array $aliases2s, string $record): bool
 {
     [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
     if ($recordMiddle === '')
         return false;
 
-    $arrs = [];
-    foreach ($aliases as $alias) {
-        $a = explode(" ", $alias);
-        if (count($a) === 2) {
-            $arrs[] = $a;
-        }
-    }
-    if (count($arrs) === 0) return false;
+    if (count($aliases2s) === 0)
+        return false;
 
-    foreach ($arrs as $alias) {
+    foreach ($aliases2s as $alias) {
         [$first, $last] = $alias;
         if (in_array($first, [$recordFirst, $recordMiddle], true) && $last === $recordLast) {
             return true;
