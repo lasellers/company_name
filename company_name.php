@@ -17,7 +17,7 @@ function matchName(array $aliases, string $record): bool
         return false;
 
     // prep data
-    [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
+    [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($words);
 
     // if exact match, good enough
     if (exactMatch($aliases, $record)
@@ -52,13 +52,30 @@ function matchName(array $aliases, string $record): bool
     // B. no middle name (on record)
     $aliasesFML = [];
     foreach ($aliases as $alias) {
-        $aliasesFML[] = getFirstMiddleLast($alias);
+        $aliasArray = explode(" ", $alias);
+        $aliasesFML[] = getFirstMiddleLast($aliasArray);
     }
     if (middleNameMissingOnRecord($aliasesFML, $recordFirst, $recordMiddle, $recordLast)
         || middleNameMissingOnRecord($aliasesFML, $recordMiddle, $recordFirst, $recordLast))
         return true;
 
     return false;
+}
+
+/**
+ * Takes a company string and explodes it to a first,middle,last array
+ * @param array $words
+ * @return array
+ */
+function getFirstMiddleLast(array $words): array
+{
+    if (count($words) === 2) {
+        $middle = "";
+        [$first, $last] = $words;
+    } else {
+        [$first, $middle, $last] = $words;
+    }
+    return [$first, $middle, $last];
 }
 
 /**
@@ -158,34 +175,6 @@ function middleNameMissingOnAlias(array $aliases2s, string $recordFirst, string 
     return false;
 }
 
-/**
- * Takes a company string and explodes it to a first,middle,last array
- * @param string $record
- * @return array
- */
-function getFirstMiddleLast(string $record): array
-{
-    $words = explode(" ", trim($record));
-    if (count($words) === 2) {
-        $middle = "";
-        [$first, $last] = $words;
-    } else {
-        [$first, $middle, $last] = $words;
-    }
-    return [$first, $middle, $last];
-}
-
-/**
- * Reverse the first and middle names
- * @param string $record
- * @return string
- */
-function reverseFirstMiddleNames(string $record): string
-{
-    [$first, $middle, $last] = getFirstMiddleLast($record);
-    return trim(implode(" ", [$middle, $first, $last]));
-}
-
 //Testing Cases
 assertTest(
     " A) Exact match",
@@ -262,6 +251,18 @@ assertTest(
         "" => false,
     ]
 );
+
+/**
+ * Reverse the first and middle names
+ * @param string $record
+ * @return string
+ */
+function reverseFirstMiddleNames(string $record): string
+{
+    $words = explode(" ", $record);
+    [$first, $middle, $last] = getFirstMiddleLast($words);
+    return trim(implode(" ", [$middle, $first, $last]));
+}
 
 function assertTest($step, array $aliases, array $records)
 {
