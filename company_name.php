@@ -37,45 +37,55 @@ function reverseFirstMiddleNames(string $record): string
  */
 function matchName(array $aliases, string $record): bool
 {
+    // prep data
+    $words = explode(" ", $record);
+    // Anything other than 2 or 3 words, fails
+    if (!in_array(count($words), [2, 3]))
+        return false;
+
+    $reverseRecord = reverseFirstMiddleNames($record);
+
     // if exact match, good enough
-    if (exactMatch($aliases, $record) || exactMatch($aliases, reverseFirstMiddleNames($record)))
+    if (exactMatch($aliases, $record) || exactMatch($aliases, $reverseRecord))
         return true;
 
     // Otherwise, we look for other kinds of matches
     // prep data
-    $words = explode(" ", $record);
-    $reverseRecord = reverseFirstMiddleNames($record);
     $reverseWords = explode(" ", $reverseRecord);
     [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
 
     // do this once per call
     $aliases3s = [];
     $aliases2s = [];
-    $aliasesFML = [];
     foreach ($aliases as $alias) {
         $a = explode(" ", $alias);
         if (count($a) >= 3) {
             $aliases3s[] = $a;
-        } else if (count($a) === 2) {
+        } else { // if (count($a) === 2) {
             $aliases2s[] = $a;
         }
-        $aliasesFML[] = getFirstMiddleLast($alias);
     }
 
-    // if not an exact match, try seeing if there are matches where the middle name is missing
+    // if not an exact match, try seeing if there are partial matches ...
+
+    // C. Check if we have middle initials that might match to the full
+    // but not with reversed first+middle
+    if (matchingMiddleInitial($aliases3s, $words))
+        return true;
+
     // A. no middle name (on alias)
     if (middleNameMissingOnAlias($aliases2s, $recordFirst, $recordMiddle, $recordLast)
         || middleNameMissingOnAlias($aliases2s, $recordMiddle, $recordFirst, $recordLast))
         return true;
 
     // B. no middle name (on record)
+    $aliasesFML = [];
+    foreach ($aliases as $alias) {
+        $a = explode(" ", $alias);
+        $aliasesFML[] = getFirstMiddleLast($alias);
+    }
     if (middleNameMissingOnRecord($aliasesFML, $words)
         || middleNameMissingOnRecord($aliasesFML, $reverseWords))
-        return true;
-
-    // also check if we have middle initials that might match to the full
-    // but not with reversed first+middle
-    if (matchingMiddleInitial($aliases3s, $words))
         return true;
 
     return false;
@@ -245,6 +255,14 @@ assertTest(
         "FIG LLC WorldWide" => false,
         "LLC FIG WorldWide" => false,
         "LLC WorldWide" => false,
+    ]
+);
+assertTest(
+    " H) Errors with too little data",
+    ["FIG", ""],
+    [
+        "FIG" => false,
+        "" => false,
     ]
 );
 
