@@ -1,4 +1,6 @@
 <?php
+// Static Analysis: https://www.exakat.io/reports/BxffXJPxoYEp/
+//
 // Note: Mulling ways to condense the sub functions. All of the string and array really
 // need to be pre-processed and cached so we can ditch a lot of the preamble.
 // Need to work on factoring out redundancies.
@@ -11,9 +13,9 @@
 function matchName(array $aliases, string $record): bool
 {
     // prep data
-    $words = explode(" ", $record);
-    // Anything other than 2 or 3 words, fails
-    if (!in_array(count($words), [2, 3], true))
+    $words = explode(" ", trim($record));
+    // Anything other than 2 or 3 words, is ignored
+    if (!in_array(count($words), [2, 3]))
         return false;
 
     // prep data
@@ -33,7 +35,7 @@ function matchName(array $aliases, string $record): bool
     foreach ($aliases as $alias) {
         $a = explode(" ", $alias);
         if (count($a) === 3) {
-            $aliases3s[] = $a;
+            $aliases3s[] = $a[1]; // only use the middle initial
         } else {
             $aliases2s[] = $a;
         }
@@ -86,7 +88,7 @@ function getFirstMiddleLast(array $words): array
  */
 function exactMatch(array $aliases, string $record): bool
 {
-    if (in_array($record, $aliases, true)) {
+    if (in_array($record, $aliases)) {
         return true;
     }
     return false;
@@ -110,12 +112,16 @@ function matchingMiddleInitial(array $aliases3s, array $words): bool
         return false;
 
     $middleRecord = $words[1];
-    foreach ($aliases3s as $alias) {
-        $middleAlias = $alias[1];
-        // check if record has a matching initial
-        if (strlen($middleRecord) === 1 && $middleRecord === $middleAlias[0]) {
-            return true;
+    if (strlen($middleRecord) === 1) {
+        foreach ($aliases3s as $middleAlias) {
+            // check if record has a matching initial
+            if ($middleRecord === $middleAlias[0]) {
+                return true;
+            }
         }
+    }
+
+    foreach ($aliases3s as $middleAlias) {
         // and if any of the aliases do
         if (strlen($middleAlias) === 1 && $middleAlias === $middleRecord[0]) {
             return true;
@@ -140,7 +146,7 @@ function middleNameMissingOnRecord(array $aliasesFML, string $first, string $mid
     //
     foreach ($aliasesFML as $alias) {
         [$aliasFirst, $aliasMiddle, $aliasLast] = $alias;
-        if (in_array($first, [$aliasFirst, $aliasMiddle], true) && $last === $aliasLast) {
+        if (in_array($first, [$aliasFirst, $aliasMiddle]) && $last === $aliasLast) {
             return true;
         }
     }
@@ -158,16 +164,16 @@ function middleNameMissingOnRecord(array $aliasesFML, string $first, string $mid
  */
 function middleNameMissingOnAlias(array $aliases2s, string $recordFirst, string $recordMiddle, string $recordLast): bool
 {
-    if (count($aliases2s) === 0)
+    if (empty($aliases2s))
         return false;
 
-    if ($recordMiddle === '')
+    if (empty($recordMiddle))
         return false;
 
     foreach ($aliases2s as $alias) {
         [$first, $last] = $alias;
         // for aliases: last name must match, and first name can be either first or middle of record
-        if (in_array($first, [$recordFirst, $recordMiddle], true) && $last === $recordLast) {
+        if (in_array($first, [$recordFirst, $recordMiddle]) && $last === $recordLast) {
             return true;
         }
     }
@@ -254,17 +260,11 @@ assertTest(
 
 /**
  * Reverse the first and middle names
- * @param string $record
- * @return string
+ * @param string $step
+ * @param array $aliases
+ * @param array $records
  */
-function reverseFirstMiddleNames(string $record): string
-{
-    $words = explode(" ", $record);
-    [$first, $middle, $last] = getFirstMiddleLast($words);
-    return trim(implode(" ", [$middle, $first, $last]));
-}
-
-function assertTest($step, array $aliases, array $records)
+function assertTest(string $step, array $aliases, array $records): void
 {
     echo "\n" . $step;
     $i = 1;
@@ -273,7 +273,12 @@ function assertTest($step, array $aliases, array $records)
         if ($actual !== $expected) {
             echo "\n $i. Expected : " . ($expected ? "true" : "false");
             echo "\n    Actual: " . ($actual ? "true" : "false");
-            echo "\n    Record: '$record' or '" . reverseFirstMiddleNames($record) . "' ~== Aliases:" . implode(", ", $aliases);
+
+            $words = explode(" ", $record);
+            [$first, $middle, $last] = getFirstMiddleLast($words);
+            $reversedRecord = trim(implode(" ", [$middle, $first, $last]));
+
+            echo "\n    Record: '$record' or '" . $reversedRecord . "' ~== Aliases:" . implode(", ", $aliases);
         }
         $i++;
     }
