@@ -41,14 +41,16 @@ function matchName(array $aliases, string $record): bool
     if (exactMatch($aliases, $record) || exactMatch($aliases, reverseFirstMiddleNames($record)))
         return true;
 
-    //
+    // prep data
     $words = explode(" ", $record);
     $reverseRecord = reverseFirstMiddleNames($record);
     $reverseWords = explode(" ", $reverseRecord);
+    [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
 
     // do this once per call
     $aliases3s = [];
     $aliases2s = [];
+    $aliasesFML = [];
     foreach ($aliases as $alias) {
         $a = explode(" ", $alias);
         if (count($a) >= 3) {
@@ -56,16 +58,17 @@ function matchName(array $aliases, string $record): bool
         } else if (count($a) === 2) {
             $aliases2s[] = $a;
         }
+        $aliasesFML[] = getFirstMiddleLast($alias);
     }
 
     // if not an exact match, try seeing if there are matches where the middle name is missing
     // A. no middle name (on alias)
-    $onAlias = middleNameMissingOnAlias($aliases2s, $record)
-        || middleNameMissingOnAlias($aliases2s, $reverseRecord);
+    $onAlias = middleNameMissingOnAlias($aliases2s, $recordFirst, $recordMiddle, $recordLast)
+        || middleNameMissingOnAlias($aliases2s, $recordMiddle, $recordFirst, $recordLast);
 
     // B. no middle name (on record)
-    $onRecord = middleNameMissingOnRecord($aliases, $words)
-        || middleNameMissingOnRecord($aliases, $reverseWords);
+    $onRecord = middleNameMissingOnRecord($aliasesFML, $words)
+        || middleNameMissingOnRecord($aliasesFML, $reverseWords);
 
     // also check if we have middle initials that might match to the full
     // but not with reversed first+middle
@@ -93,7 +96,7 @@ function exactMatch(array $aliases, string $record): bool
  * If either an alias item or record has an initial middle name that matches the first char of another,
  * that is a match/true.
  * Otherwise false.
- * @param array $aliases
+ * @param array $aliases3s
  * @param array $words
  * @return bool
  */
@@ -108,9 +111,12 @@ function matchingMiddleInitial(array $aliases3s, array $words): bool
     $middleRecord = $words[1];
     foreach ($aliases3s as $alias) {
         $middleAlias = $alias[1];
+        // check if record has a matching initial
         if (strlen($middleRecord) === 1 && $middleRecord === $middleAlias[0]) {
             return true;
-        } else if (strlen($middleAlias) === 1 && $middleAlias === $middleRecord[0]) {
+        }
+        // and if any of the aliases do
+        if (strlen($middleAlias) === 1 && $middleAlias === $middleRecord[0]) {
             return true;
         }
     }
@@ -120,11 +126,11 @@ function matchingMiddleInitial(array $aliases3s, array $words): bool
 
 /**
  * Looks for a match where the middle name is missing (on record)
- * @param array $aliases
+ * @param array $aliasesFML
  * @param array $words
  * @return bool
  */
-function middleNameMissingOnRecord(array $aliases, array $words): bool
+function middleNameMissingOnRecord(array $aliasesFML, array $words): bool
 {
     // if middle name is not missing, ignore
     if (count($words) !== 2)
@@ -132,8 +138,8 @@ function middleNameMissingOnRecord(array $aliases, array $words): bool
 
     //
     [$first, $last] = $words;
-    foreach ($aliases as $alias) {
-        [$firstAlias, $middleAlias, $lastAlias] = getFirstMiddleLast($alias);
+    foreach ($aliasesFML as $alias) {
+        [$firstAlias, $middleAlias, $lastAlias] = $alias;
         if (in_array($first, [$firstAlias, $middleAlias], true) && $last === $lastAlias) {
             return true;
         }
@@ -144,21 +150,23 @@ function middleNameMissingOnRecord(array $aliases, array $words): bool
 
 /**
  * Looks for a match where the middle name is missing (on alias)
- * @param array $aliases
- * @param string $record
+ * @param array $aliases2s
+ * @param string $recordFirst
+ * @param string $recordMiddle
+ * @param string $recordLast
  * @return bool
  */
-function middleNameMissingOnAlias(array $aliases2s, string $record): bool
+function middleNameMissingOnAlias(array $aliases2s, string $recordFirst, string $recordMiddle, string $recordLast): bool
 {
-    [$recordFirst, $recordMiddle, $recordLast] = getFirstMiddleLast($record);
-    if ($recordMiddle === '')
+    if (count($aliases2s) === 0)
         return false;
 
-    if (count($aliases2s) === 0)
+    if ($recordMiddle === '')
         return false;
 
     foreach ($aliases2s as $alias) {
         [$first, $last] = $alias;
+        // for aliases: last name must match, and first name can be either first or middle of record
         if (in_array($first, [$recordFirst, $recordMiddle], true) && $last === $recordLast) {
             return true;
         }
