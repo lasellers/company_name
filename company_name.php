@@ -41,6 +41,7 @@ function matchName(array $aliases, string $record): bool
     if (exactMatch($aliases, $record) || exactMatch($aliases, reverseFirstMiddleNames($record)))
         return true;
 
+    // Otherwise, we look for other kinds of matches
     // prep data
     $words = explode(" ", $record);
     $reverseRecord = reverseFirstMiddleNames($record);
@@ -63,18 +64,21 @@ function matchName(array $aliases, string $record): bool
 
     // if not an exact match, try seeing if there are matches where the middle name is missing
     // A. no middle name (on alias)
-    $onAlias = middleNameMissingOnAlias($aliases2s, $recordFirst, $recordMiddle, $recordLast)
-        || middleNameMissingOnAlias($aliases2s, $recordMiddle, $recordFirst, $recordLast);
+    if (middleNameMissingOnAlias($aliases2s, $recordFirst, $recordMiddle, $recordLast)
+        || middleNameMissingOnAlias($aliases2s, $recordMiddle, $recordFirst, $recordLast))
+        return true;
 
     // B. no middle name (on record)
-    $onRecord = middleNameMissingOnRecord($aliasesFML, $words)
-        || middleNameMissingOnRecord($aliasesFML, $reverseWords);
+    if (middleNameMissingOnRecord($aliasesFML, $words)
+        || middleNameMissingOnRecord($aliasesFML, $reverseWords))
+        return true;
 
     // also check if we have middle initials that might match to the full
     // but not with reversed first+middle
-    $initial = matchingMiddleInitial($aliases3s, $words);
+    if (matchingMiddleInitial($aliases3s, $words))
+        return true;
 
-    return $onAlias || $onRecord || $initial;
+    return false;
 }
 
 /**
