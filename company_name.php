@@ -1,6 +1,6 @@
 <?php
 // Note: Mulling ways to condense the sub functions. All of the string and array really
-// need to be pre-processed and cached so we can ditch a lot of the preamble..
+// need to be pre-processed and cached so we can ditch a lot of the preamble.
 
 /**
  * Takes a company string and explodes it to a first,middle,last array
