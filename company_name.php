@@ -41,18 +41,22 @@ function matchName(array $aliases, string $record): bool
     if (exactMatch($aliases, $record) || exactMatch($aliases, reverseFirstMiddleNames($record)))
         return true;
 
+    $words = explode(" ", $record);
+    $reverseRecord = reverseFirstMiddleNames($record);
+    $reverseWords = explode(" ", $reverseRecord);
+
     // if not an exact match, try seeing if there are matches where the middle name is missing
     // A. no middle name (on alias)
     $onAlias = middleNameMissingOnAlias($aliases, $record)
-        || middleNameMissingOnAlias($aliases, reverseFirstMiddleNames($record));
+        || middleNameMissingOnAlias($aliases, $reverseRecord);
 
     // B. no middle name (on record)
-    $onRecord = middleNameMissingOnRecord($aliases, $record)
-        || middleNameMissingOnRecord($aliases, reverseFirstMiddleNames($record));
+    $onRecord = middleNameMissingOnRecord($aliases, $words)
+        || middleNameMissingOnRecord($aliases, $reverseWords);
 
     // also check if we have middle initials that might match to the full
-    $initial = matchingMiddleInitial($aliases, $record)
-        || middleNameMissingOnAlias($aliases, reverseFirstMiddleNames($record));
+    $initial = matchingMiddleInitial($aliases, $words);
+    // || matchingMiddleInitial($aliases, $reverseWords);
 
     return $onAlias || $onRecord || $initial;
 }
@@ -77,12 +81,11 @@ function exactMatch(array $aliases, string $record): bool
  * that is a match/true.
  * Otherwise false.
  * @param array $aliases
- * @param string $record
+ * @param array $words
  * @return bool
  */
-function matchingMiddleInitial(array $aliases, string $record): bool
+function matchingMiddleInitial(array $aliases, array $words): bool
 {
-    $words = explode(" ", $record);
     if (count($words) === 2)
         return false;
 
@@ -112,13 +115,12 @@ function matchingMiddleInitial(array $aliases, string $record): bool
 /**
  * Looks for a match where the middle name is missing (on record)
  * @param array $aliases
- * @param string $record
+ * @param array $words
  * @return bool
  */
-function middleNameMissingOnRecord(array $aliases, string $record): bool
+function middleNameMissingOnRecord(array $aliases, array $words): bool
 {
     // if middle name is not missing, ignore
-    $words = explode(" ", $record);
     if (count($words) !== 2)
         return false;
 
